@@ -1,0 +1,30 @@
+name: 每周一自动同步上游 山东电信IPTV源
+on:
+  schedule:
+    # UTC 0点 = 北京时间周一早上8点执行同步
+    - cron: '0 0 * * 1'
+  workflow_dispatch: # 支持手动一键触发同步
+
+jobs:
+  sync-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: 配置Git提交用户
+        run: |
+          git config user.name "IPTV-AutoSync"
+          git config user.email "sync@github.com"
+
+      - name: 拉取上游更新并合并
+        run: |
+          git remote add upstream https://github.com/sumingyd/Telecom-Shandong-IPTV-List.git
+          git fetch upstream
+          git checkout main
+          # 无冲突自动合并，存在冲突则终止本次自动同步
+          git merge --ff-only upstream/main || echo "文件存在冲突，请手动点击Sync fork处理"
+          git push origin main
